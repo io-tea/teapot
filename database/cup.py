@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer
 
-from .database import Base
+from database import Base
 
 
 class CupModel(Base):
