@@ -5,6 +5,7 @@ import click
 from flask import Flask
 
 from database import db_init, db_session
+from fake import generate_fake_data
 from flask_graphql import GraphQLView
 from schema import schema
 
@@ -16,10 +17,14 @@ app.add_url_rule('/graphql', view_func=graphql)
 
 @click.command()
 @click.option('--init', default=False, is_flag=True)
-def main(init):
+@click.option('--fake', default=False, is_flag=True)
+def main(init, fake):
     if init:
         db_init()
         click.echo('Database initialized')
+        if fake:
+            click.echo('Populating fake data')
+            generate_fake_data(3, 100)
     app.run()
 
 
