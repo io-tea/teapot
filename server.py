@@ -19,7 +19,11 @@ logging.getLogger("coap-server").setLevel(logging.DEBUG)
 
 class Resource(resource.Resource):
     __model__ = None
-    _values = []
+    _values = None
+
+    def __init__(self):
+        super().__init__()
+        self._values = []
 
     async def render_put(self, request):
         try:
