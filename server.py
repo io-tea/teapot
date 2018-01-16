@@ -20,15 +20,20 @@ logging.getLogger("coap-server").setLevel(logging.DEBUG)
 class Resource(resource.Resource):
     __model__ = None
     _values = None
+    _values_ids = None
+    _last_value = 0
 
     def __init__(self):
         super().__init__()
         self._values = []
+        self._values_ids = set()
+        self._last_value = 0
 
     async def render_put(self, request):
         try:
             value = self.process_message(request.payload)
-            self._values.append(value)
+            if value is not None:
+                self._values.append(value)
         except ValueError:
             logging.debug(str(ValueError))
 
@@ -45,9 +50,11 @@ class Resource(resource.Resource):
             return
 
         cup = db_session.query(database.CupModel).order_by('-id').first()
-        value = sum(self._values) / len(self._values)
+        if self._values:
+            self._last_value = sum(self._values) / len(self._values)
         self._values = []
-        db_session.add(self.__model__(value=value, cup_id=cup.id))
+        self._values_ids = set()
+        db_session.add(self.__model__(value=self._last_value, cup_id=cup.id))
 
     def process_message(self, payload):
         """
@@ -61,9 +68,13 @@ class Resource(resource.Resource):
 
         try:
             value, message_id = payload.split(',')
+            value = float(value)
         except ValueError:
             ValueError('Invalid message {}'.format(payload))
 
+        if message_id in self._values_ids:
+            return None
+        self._values_ids.add(message_id)
         return value
 
 
