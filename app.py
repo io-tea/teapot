@@ -27,7 +27,7 @@ def main(init, fake):
         if fake:
             click.echo('Populating fake data')
             generate_fake_data(3, 100)
-    app.run()
+    app.run(host='0.0.0.0')
 
 
 if __name__ == '__main__':

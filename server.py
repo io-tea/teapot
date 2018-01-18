@@ -10,11 +10,12 @@ import aiocoap
 
 from database import db_session
 import database
+from sqlalchemy import desc
 
 from utils import PeriodicTask
 
-logging.basicConfig(level=logging.INFO)
-logging.getLogger("coap-server").setLevel(logging.DEBUG)
+#logging.basicConfig(level=logging.INFO)
+#logging.getLogger("coap-server").setLevel(logging.DEBUG)
 
 
 class Resource(resource.Resource):
@@ -49,12 +50,13 @@ class Resource(resource.Resource):
             logging.debug('Nothing to update in {}'.format(self.__model__.__name__))
             return
 
-        cup = db_session.query(database.CupModel).order_by('-id').first()
+        cup = db_session.query(database.CupModel).order_by(desc(database.CupModel.id)).first()
         if self._values:
             self._last_value = sum(self._values) / len(self._values)
         self._values = []
         self._values_ids = set()
         db_session.add(self.__model__(value=self._last_value, cup_id=cup.id))
+        db_session.commit()
 
     def process_message(self, payload):
         """
@@ -63,7 +65,7 @@ class Resource(resource.Resource):
         :return: decoded value
         :raises ValueError: if the message is invalid
         """
-        payload = str(payload)
+        payload = str(payload.rstrip(b'\x00').decode('utf-8'))
         value, message_id = None, None
 
         try:
@@ -97,6 +99,9 @@ class TemperatureResource(Resource):
 @click.command()
 @click.option('--port', default=1234)
 def main(port):
+    db_session.add(database.CupModel())
+    db_session.commit()
+
     greyscale = GreyscaleResource()
     humidity = HumidityResource()
     liquid = LiquidResource()
